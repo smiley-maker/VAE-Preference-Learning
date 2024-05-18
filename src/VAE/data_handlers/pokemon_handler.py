@@ -38,15 +38,13 @@ class PokemonDataset(Dataset):
 
 
 if __name__ == "__main__":
+    print("Data Handler was run directly, initiating example...")
     dataset = PokemonDataset()
-    print(len(dataset))
-
+    print("CSV data has a format of:")
     print(dataset.pokemon_df.head())
 
-
+    print("Selecting a random Pokemon from the dataset...")
     x, name = dataset[random.randrange(0, len(dataset))]
-    print(x.shape)
-    print(name)
 
     plt.figure(figsize=(5, 5))
     plt.imshow(torch.reshape(x, (120, 120, 3)))
