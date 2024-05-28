@@ -103,7 +103,7 @@ if __name__ == "__main__":
     trainer = TrainVAE(
         model=model,
         optimizer=optimizer,
-        epochs=500,
+        epochs=3000,
         batch_size=32,
         data=dataloader, 
         xdim=(3,120,120),
@@ -112,12 +112,15 @@ if __name__ == "__main__":
 
     trainer.train_model()
 
-    visualize_latent_space(model, dataloader, device, num_samples=800)
+#    with open("../models/model1.pkl", "wb") as f:
+#       pickle.dump(model, f)
+
+#    visualize_latent_space(model, dataloader, device, num_samples=800)
 
     # Generate and show images
-    generate_and_show_images(
-        model=model,
-        device=device,
-        num_images=5,
-        latent_dim=100  # Make sure this matches the latent_dim in the VAE_Model
-    )
+#    generate_and_show_images(
+#        model=model,
+#        device=device,
+#        num_images=5,
+#        latent_dim=100  # Make sure this matches the latent_dim in the VAE_Model
+#    )
