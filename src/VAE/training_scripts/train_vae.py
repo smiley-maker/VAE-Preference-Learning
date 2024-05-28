@@ -5,11 +5,12 @@ class TrainVAE:
             self,
             model,
             optimizer, 
-            epochs, 
-            batch_size,
+            epochs : int, 
+            batch_size : int,
             data, 
-            xdim,
+            xdim : int,
             device, 
+            save_images = False,
             extra_losses = None
         ) -> None:
         
@@ -21,7 +22,9 @@ class TrainVAE:
         self.xdim = xdim
         self.device = device
         self.extra_losses = extra_losses
-        self.writer = SummaryWriter("../runs/vae_experiment/test4")  # Create writer
+        self.save_images = save_images
+        self.writer = SummaryWriter("../runs/trajectory_experiment/testone")  # Create writer
+
     
     def vae_loss(self, x, x_hat, mean, logvar):
         reproduction_loss = nn.functional.binary_cross_entropy(x_hat, x, reduction="sum")
@@ -34,13 +37,11 @@ class TrainVAE:
         return z
     
     def train_model(self):
-        sampled_z = self.sample_latent_space()
         for epoch in range(self.epochs):
             overall_loss = 0
 
-            for batch_num, (x, _) in enumerate(self.data):
-                x = x.to(self.device)
-#                x = x.view(self.batch_size, self.xdim).to(self.device)
+            for batch_num, x in enumerate(self.data):
+                x = torch.flatten(x).to(self.device)
 
                 self.optimizer.zero_grad()
 
@@ -60,16 +61,17 @@ class TrainVAE:
             # Log loss to TensorBoard
             self.writer.add_scalar("Loss/train", overall_loss/(batch_num*self.batch_size), epoch)
 
-            with torch.no_grad():
-                # Sample from latent space (replace with your sampling function)
-                #sampled_z = self.sample_latent_space()
-                sampled_images = self.model.decode(sampled_z)
+            if self.save_images:
+                with torch.no_grad():
+                    # Sample from latent space (replace with your sampling function)
+                    sampled_z = self.sample_latent_space()
+                    sampled_images = self.model.decode(sampled_z)
 
-                # Normalize and reshape for TensorBoard (assuming image data)
-                grid = torchvision.utils.make_grid(
-                    sampled_images.detach().cpu().view(-1, *self.xdim) / 2 + 0.5, normalize=True)
+                    # Normalize and reshape for TensorBoard (assuming image data)
+                    grid = torchvision.utils.make_grid(
+                        sampled_images.detach().cpu().view(-1, *self.xdim) / 2 + 0.5, normalize=True)
 
-                self.writer.add_image("LatentSpace/Samples", grid, epoch)
+                    self.writer.add_image("LatentSpace/Samples", grid, epoch)
 
             
             print(f"Epoch {epoch + 1}: {overall_loss/(batch_num*self.batch_size)}")
