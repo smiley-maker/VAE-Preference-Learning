@@ -21,3 +21,11 @@ import plotly.express as px
 from torch.utils.tensorboard import SummaryWriter
 import glob
 import pickle
+from sklearn.cluster import KMeans
+from aprel.basics.environment import NonGymEnvironment
+from aprel.querying.query_optimizer import QueryOptimizerDiscreteTrajectorySet
+from aprel.learning.user_models import HumanUser, SoftmaxUser
+from aprel.utils.util_functions import get_random_normalized_vector
+from aprel.learning.belief_models import SamplingBasedBelief
+from aprel.learning.data_types import PreferenceQuery, Preference
+from aprel.basics.trajectory import Trajectory, TrajectorySet

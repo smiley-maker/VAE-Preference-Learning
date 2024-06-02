@@ -23,7 +23,7 @@ class TrainVAE:
         self.device = device
         self.extra_losses = extra_losses
         self.save_images = save_images
-        self.writer = SummaryWriter("../runs/trajectory_experiment/testone")  # Create writer
+        self.writer = SummaryWriter("../runs/trajectory_experiment/5000-epochs")  # Create writer
 
     
     def vae_loss(self, x, x_hat, mean, logvar):

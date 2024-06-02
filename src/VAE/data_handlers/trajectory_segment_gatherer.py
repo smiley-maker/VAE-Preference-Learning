@@ -13,6 +13,10 @@ samples.
 """
 
 from src.VAE.utils.imports import *
+import matplotlib.cm as cm
+from matplotlib import colormaps
+from matplotlib.patches import Rectangle
+
 
 class TrajectoryDataset(Dataset):
     def __init__(
@@ -88,7 +92,6 @@ class TrajectoryDataset(Dataset):
 #        trajectory = torch.tensor(trajectory, dtype=torch.float)
         
         return trajectory
-
     
     def get_trajectories(self):
         i = 1        
@@ -103,6 +106,41 @@ class TrajectoryDataset(Dataset):
         self.trajectories = trajectories_mod
         print(self.trajectories.shape)
     
+    def __visualize__(self, idx : int):
+        # Plots the trajectory as a sequence of terrain types with different colors. 
+        # Need to define a color map for one-hot encoded trajectory
+        colormap_name = 'tab10'  # You can choose any colormap here
+        colormap = colormaps.get_cmap(colormap_name)
+        cmap = colormap(np.arange(len(self.terrain_types)) / (len(self.terrain_types) - 1))
+
+        terrain_colors = {self.terrain_types[i]: cmap[i] for i in range(len(self.terrain_types))}
+        x = 0
+        y = 0
+        width = 50
+        height = 50
+        data = self.trajectories[idx]
+        fig, ax = plt.subplots()
+        recs = []
+        for terrain_onehot in data:
+            terrain_type_index = np.argmax(terrain_onehot)
+            terrain_type_name = self.terrain_types[terrain_type_index]
+            terrain_color = terrain_colors[terrain_type_name]
+            # Plot rectangle with position, width, height and color
+            recs.append(Rectangle((x, y), width, height, color=terrain_color))
+#            ax.add_patch(Rectangle((x, y), width, height, color=terrain_color))
+            x += width
+            y += height
+        
+        for r in recs:
+            print(r)
+            ax.add_patch(r)
+
+        # Add labels and title to your plot as usual
+#        fig.xlabel("X-axis")
+#        fig.ylabel("Y-axis")
+#        fig.title("Terrain Types")
+        plt.show()    
+
     def __getitem__(self, idx : int):
         try: 
             assert idx <= len(self.trajectories)
@@ -118,127 +156,8 @@ class TrajectoryDataset(Dataset):
 
 
 
-class SegmentCollection(Dataset):
-    def __init__(self, data : np.ndarray, num_samples : int, segment_length : int, terrain_types : list[str]) -> None:
-        # Data is a 2D costmap that we will select segments from. 
-        super().__init__()
-        self.data = data
-        self.num_samples = num_samples
-        self.segment_length = segment_length
-        self.terrain_types = terrain_types
-        self.trajectories = []
-        self.trajectories = self.get_trajectories()
-        self.segments = self.encode_terrains()
-
-
-    def sample_data(self) -> list[int]: 
-        # Collects a single segment
-        # A list of costs associated with the path cells.  
-
-        segment = []
-
-        # Gets a random starting cell.
-        random_start_x = random.randrange(1, self.data.shape[0]-self.segment_length)
-        random_start_y = random.randrange(1, self.data.shape[1]-self.segment_length) 
-        random_start = self.data[random_start_x][random_start_y]
-        segment.append(random_start)
-
-        # Now we want to add as many connected cells as needed. 
-        for i in range(self.segment_length):
-            surroundings = [
-                # We can move in the positive x direction
-                (self.data[random_start_x + 1][random_start_y], random_start_x + 1, random_start_y),
-                # We can move in the negative x direction
-                (self.data[random_start_x - 1][random_start_y], random_start_x - 1, random_start_y),
-                # We can move in the positive y direction
-                (self.data[random_start_x][random_start_y + 1], random_start_x, random_start_y + 1),
-                # We can move in the negative y direction
-                (self.data[random_start_x][random_start_y - 1], random_start_x, random_start_y - 1),
-                # We can move diagonally to the upper left
-                (self.data[random_start_x - 1][random_start_y + 1], random_start_x - 1, random_start_y + 1),
-                # We can move diagonally to the lower left
-                (self.data[random_start_x - 1][random_start_y - 1], random_start_x - 1, random_start_y - 1),
-                # We can move diagonally to the upper right
-                (self.data[random_start_x + 1][random_start_y + 1], random_start_x + 1, random_start_y + 1),
-                # We can move diagonally to the lower right
-                (self.data[random_start_x + 1][random_start_y - 1], random_start_x + 1, random_start_y - 1)
-            ] # - random start because we don't want to go backwards. 
-
-            next_cell = random.choice(surroundings)
-
-            segment.append(next_cell[0])
-
-            random_start = next_cell
-            random_start_x = next_cell[1]
-            random_start_y = next_cell[2]
-
-            return segment        
     
-    def get_trajectories(self):
-        """
-        Returns a trajectory segment set with self.num_samples unique sequences
-        of length self.segment_length. 
-        """
-        i = 1
-        trajectories = []
-        while i < self.num_samples:
-            trajectory = self.sample_data()
-            trajectory = self.encode_terrains()
-            if trajectory not in trajectories:
-                trajectories.append(trajectory)
-                i = i + 1
-
-        return trajectories # unique trajectories. 
-    
-    def encode_terrains(self):
-        # self.terrains is a list of terrain types
-        # to encode using one hot encoding.
-
-        # Each class of terrain gets a one hot encoding.
-        # grass -> [1, 0, 0, 0]
-        # trees -> [0, 1, 0, 0]
-        # ...
-
-        segments = [] 
-
-        for i in range(len(self.trajectories)):
-            for j in range(len(self.trajectories[i])):
-                segment = []
-                for k in range(len(self.terrain_types)):
-                    if self.terrain_types[k] == self.trajectories[i][j]:
-                        segment.append([0]*(j-1) + [1] + [0]*(len(self.terrain_types) - (j + 1)))
-                
-                segments.append(segment)
-
-        return segments
-    
-    def __getitem__(self, idx : int):
-        try:
-            assert idx <= len(self.trajectories)
-            return self.trajectories[idx]
-        except: 
-            print(f"Index out of range for trajectory set of length {len(self.trajectories)}.")
-            return
-    
-    def __len__(self):
-        return len(self.trajectories)
-
-
-class Segment(Dataset):
-    def __init__(self, terrains : np.ndarray, terrain_types : list[str]) -> None:
-        # Segment is a trajectory (a list of costs/terrain types)
-        # One thing to note is that it's really going to have to be
-        # the terrain type, not a cost, because the cost will change. 
-        # Maybe either labels or one hot encoded vectors. 
-        super().__init__()
-        self.terrains = terrains
-        self.terrain_types = terrain_types
-        self.segment = self.encode_terrains()
-    
-    def __getitem__(self):
-        return self.segment
-    
-    def __visualize__(self):
+    def __histogram__(self, idx : int):
         # How to show a trajectory to user for querying? 
         #plt.plot(self.segment)  # Won't work with one hot encoding. Maybe display cells in costmap
 
@@ -248,7 +167,7 @@ class Segment(Dataset):
         terrain_counts = {
             k : 0 for k in self.terrain_types
         }
-        for terrain in self.terrains:
+        for terrain in self.trajectories[idx]:
             if terrain in terrain_counts:
                 terrain_counts[terrain] += 1
             else:
@@ -270,36 +189,3 @@ class Segment(Dataset):
 
         plt.close()
     
-    def encode_terrains(self):
-        # self.terrains is a list of terrain types
-        # to encode using one hot encoding.
-
-        # Each class of terrain gets a one hot encoding.
-        # grass -> [1, 0, 0, 0]
-        # trees -> [0, 1, 0, 0]
-        # ...
-
-        segment = []
-
-        for i in range(len(self.terrains)):
-            for j in range(len(self.terrain_types)):
-                if self.terrain_types[j] == self.terrains[i]:
-                    segment.append([0]*(j-1) + [1] + [0]*(len(self.terrain_types) - (j + 1))) # One hot encoding ?
-        
-        return segment
-    
-    def __len__(self):
-        return len(self.segment)
-    
-
-
-if __name__ == "__main__":
-    categories = ["Grass", "Road", "Sidewalk", "Water", "Trees"]
-
-    grid_size = (120, 120)
-
-    random_array = np.random.randint(0, len(categories), size=grid_size)
-    data = np.vectorize(lambda x: categories[x])(random_array)
-
-    collection = SegmentCollection(data, 10, 20, categories)
-    collection[0].__visualize__()
