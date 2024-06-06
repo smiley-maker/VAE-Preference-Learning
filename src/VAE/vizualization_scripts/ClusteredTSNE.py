@@ -1,6 +1,6 @@
 from src.VAE.utils.imports import *
 
-def cluster_latent_space(model, data_loader, device):
+def cluster_latent_space(model, data_loader, device, mapping : dict = None):
     model.eval()
 
     with torch.no_grad():
@@ -23,15 +23,33 @@ def cluster_latent_space(model, data_loader, device):
     tsne = TSNE(n_components=3, verbose=1)
     tsne_results = tsne.fit_transform(latent_array)
 
-    tab10 = plt.get_cmap('Pastel1')
-    cluster_colors = ListedColormap(tab10(np.linspace(0, 1, len(np.unique(labels)))))
-    
+    num_labels = len(np.unique(labels))
+
+    if mapping is not None:
+        cluster_labels = [mapping[i] for i in labels]
+        print(cluster_labels)
+    else:
+        cluster_labels = labels
+
+    tab10 = plt.get_cmap('Pastel2')
+    colors = tab10(np.linspace(0, 1, num_labels))
+#    cluster_colors = ListedColormap(tab10(np.linspace(0, 1, len(np.unique(labels)))))
+    color_scale = [[i / (num_labels - 1), f'rgb({r * 255}, {g * 255}, {b * 255})'] for i, (r, g, b, a) in enumerate(colors)]
+
     # Create the scatter plot with color based on labels
     fig = px.scatter_3d(
         tsne_results, x=0, y=1, z=2,
-        color=labels,
-        color_discrete_sequence=cluster_colors(np.arange(len(np.unique(labels))))  # Map labels to colors
+        color=cluster_labels,
+        #color_discrete_sequence=cluster_colors(np.arange(len(np.unique(labels))))  # Map labels to colors
+        color_continuous_scale=color_scale
     )
+
+    # Update the colorbar to show terrain type names
+    fig.update_layout(coloraxis_colorbar=dict(
+        title="Terrain Type",
+        tickvals=np.arange(num_labels),
+        ticktext=np.unique(cluster_labels)
+    ))
 
     fig.update_layout(title='VAE Latent Space with TSNE',
                         width=600,

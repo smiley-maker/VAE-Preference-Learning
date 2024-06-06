@@ -88,7 +88,7 @@ if __name__ == "__main__":
     trainer.train_model()
 
     # Cluster the latent space representations of the original dataset. 
-    clusters = cluster_latent_space(model, dataloader, device)
+    clusters = cluster_latent_space(model, dataloader, device, mapping=mapping_index_to_terrain)
 
     # Now we can use APREL with the clustered trajectory data. 
     
