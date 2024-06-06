@@ -32,6 +32,13 @@ class TrajectoryDataset(Dataset):
         self.num_samples = num_samples
         self.segment_length = segment_length
         self.terrain_types = terrain_types
+
+        self.mapping = {
+            t : i for i,t in enumerate(self.terrain_types)
+        }
+
+        print(self.mapping)
+
         self.trajectories = []
         self.get_trajectories()
 
@@ -93,18 +100,21 @@ class TrajectoryDataset(Dataset):
         
         return trajectory
     
+    def integer_label_encoding(self, traj : list[str]) -> list[int]:
+        return [self.mapping[cell] for cell in traj]
+    
     def get_trajectories(self):
-        i = 1        
+        i = 1
         while i < self.num_samples:
             trajectory = self.sample_trajectory()
-            trajectory = self.encode_trajectory(trajectory)
+            trajectory = self.integer_label_encoding(trajectory)
+#            trajectory = self.encode_trajectory(trajectory)
             if trajectory not in self.trajectories:
                 self.trajectories.append(trajectory)
                 i = i + 1
         
         trajectories_mod = torch.stack([torch.tensor(t, dtype=torch.float) for t in self.trajectories])
         self.trajectories = trajectories_mod
-        print(self.trajectories.shape)
     
     def __visualize__(self, idx : int):
         # Plots the trajectory as a sequence of terrain types with different colors. 
@@ -177,8 +187,8 @@ class TrajectoryDataset(Dataset):
         terrain_freq = list(terrain_counts.values())
 
         # Create the count plot
-        print(self.terrain_types)
-        print(terrain_freq)
+#        print(self.terrain_types)
+#        print(terrain_freq)
         plt.bar(self.terrain_types, terrain_freq)
 
         plt.title("Terrain Counts in Trajectory")

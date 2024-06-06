@@ -29,3 +29,4 @@ from aprel.utils.util_functions import get_random_normalized_vector
 from aprel.learning.belief_models import SamplingBasedBelief
 from aprel.learning.data_types import PreferenceQuery, Preference
 from aprel.basics.trajectory import Trajectory, TrajectorySet
+from matplotlib.colors import ListedColormap

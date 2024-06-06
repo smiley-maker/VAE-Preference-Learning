@@ -23,7 +23,7 @@ class TrainVAE:
         self.device = device
         self.extra_losses = extra_losses
         self.save_images = save_images
-        self.writer = SummaryWriter("../runs/trajectory_experiment/5000-epochs")  # Create writer
+        self.writer = SummaryWriter("../runs/trajectory_experiment/LSTM-500-epochs")  # Create writer
 
     
     def vae_loss(self, x, x_hat, mean, logvar):
@@ -37,11 +37,14 @@ class TrainVAE:
         return z
     
     def train_model(self):
+#        print(self.data)
         for epoch in range(self.epochs):
             overall_loss = 0
 
             for batch_num, x in enumerate(self.data):
-                x = torch.flatten(x).to(self.device)
+                x = x.to(self.device)
+#                print(x.shape)
+#                x = torch.flatten(x).to(self.device)
 
                 self.optimizer.zero_grad()
 

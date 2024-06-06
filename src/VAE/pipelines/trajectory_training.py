@@ -1,105 +1,64 @@
-import aprel.basics
-import aprel.querying
 from src.VAE.utils.imports import *
 from src.VAE.data_handlers.trajectory_segment_gatherer import TrajectoryDataset
 from src.VAE.training_scripts.train_vae import TrainVAE
-from src.VAE.architectures.tvae_base import TVAE_Model
+from src.VAE.architectures.vae_lstm import MemoryVAE
+from src.VAE.utils.moving_average import moving_average
+from src.VAE.vizualization_scripts.ClusteredTSNE import cluster_latent_space
 
 def collate(batch):
     return torch.stack(batch)
-
-def visualize_latent_space(model, data_loader, device, num_samples=100):
-    model.eval()
-    latents = []
-    with torch.no_grad():
-        for i, data in enumerate(data_loader):
-          data = torch.flatten(data).to(device)
-
-          if len(latents) > num_samples:
-            break
-          #data = data.to(device)#.view(data.size(0), -1)
-          mu, _ = model.encode(data)
-          latents.append(mu)
-
-    latents = torch.cat(latents, dim=0).cpu().numpy()
-    latents = latents.reshape(1, -1)
-    tsne = TSNE(n_components=2, verbose=1)
-    tsne_results = tsne.fit_transform(latents)
-    fig = px.scatter(tsne_results, x=0, y=1)
-    fig.update_layout(title='VAE Latent Space with TSNE',
-                        width=600,
-                        height=600)
-
-    fig.show()
-
-
-def cluster_latent_space(model, data_loader, device):
-    model.eval()
-    latents = []
-    
-    for data in data_loader:
-       data = torch.flatten(data).to(device)
-       mu, var = model.encode(data)
-       std_mean = model.reparametrize(mu, var)
-       latents.append(std_mean)
-
-#    with torch.no_grad():
-#        for i, data in enumerate(data_loader):
-          # Flattens data so it's the appropriate input size for encoder. 
-#          data = torch.flatten(data).to(device)
-          
-          # Encodes data into mu and log variance (latent space representation)
-#          mu, var = model.encode(data)
-          # Reparametrizes the latent space representation to be better aligned. 
-#          standardized_mean = model.reparametrize(mu, var)
-          # Stores the latent representation for this trajectory. 
-#          latents.append(standardized_mean)
-
-    latents = torch.cat(latents, dim=0).cpu().numpy()
-#    latents = latents.reshape(1, -1)
-#    latents = latents[:64]
-
-    # Clustering
-    km = KMeans(n_clusters=5, random_state=0, n_init="auto").fit(latents)
-#    centers = km.cluster_centers_
-    labels = km.labels_
-    return labels
 
 
 def feature_func(traj : Trajectory):
    # This function returns the terrain feature breakdown for a trajectory. 
    # Essentially count of each terrain type. 
-   features = []
-   terrain_types = np.unique(traj)
-   for t in terrain_types:
-    count = np.count_nonzero(traj == t)
-    features.append(count/len(traj))
+    features = []
+    categories = ["Grass", "Road", "Sidewalk", "Water", "Trees", "Rock", "Brush", "Sand"]
+    mapping = {
+            t : i for i,t in enumerate(categories)
+        }
     
-   return np.array(features)
+    traj = np.array(traj, dtype=int)
+
+    for t in categories:
+        count = np.count_nonzero(traj == mapping[t])
+        features.append(count/len(traj))
+    
+    return np.array(features)
+
+def run_experiment():
+    pass
 
 if __name__ == "__main__":
     # Create device
     device = torch.device("mps")
     print(f"Using {device}")
 
-    categories = ["Grass", "Road", "Sidewalk", "Water", "Trees"]
+    categories = ["Grass", "Road", "Sidewalk", "Water", "Trees", "Rock", "Brush", "Sand"]
+    mapping_index_to_terrain = {
+            i : t for i,t in enumerate(categories)
+        }
+
 
     grid_size = (900, 900)
 
     random_array = np.random.randint(0, len(categories), size=grid_size)
     costmap = np.vectorize(lambda x: categories[x])(random_array)
 
-    segment_size = 15
+    segment_size = 16
     num_categories = len(categories)
+    batch_size = 32
 
-    # Load model
-    model = TVAE_Model(
-#        input_size=(10, len(categories)),
-        input_size=num_categories*segment_size*32 ,
-        hidden_dim=512,
-        latent_dim=num_categories*segment_size,
-        device=device
+    # Load LSTM Model
+    model = MemoryVAE(
+       batch_size=batch_size,
+       terrain_classes_count=num_categories,
+       trajectory_length=segment_size,
+       latent_dim=num_categories // 2,
+       hidden_size=128, 
+       device=device
     ).to(device)
+
 
     # Load data
     dataset = TrajectoryDataset(
@@ -109,7 +68,7 @@ if __name__ == "__main__":
         terrain_types=categories
     )
 
-    dataloader = DataLoader(dataset, batch_size=32, drop_last=True, collate_fn=collate)
+    dataloader = DataLoader(dataset, batch_size=batch_size, drop_last=True, collate_fn=collate)
 
     # Create optimizer
     optimizer = optim.Adam(model.parameters(), lr=3e-4)
@@ -129,7 +88,7 @@ if __name__ == "__main__":
     trainer.train_model()
 
     # Cluster the latent space representations of the original dataset. 
-    clusters = cluster_latent_space(model, dataset, device)
+    clusters = cluster_latent_space(model, dataloader, device)
 
     # Now we can use APREL with the clustered trajectory data. 
     
@@ -141,43 +100,88 @@ if __name__ == "__main__":
     for d in dataset:
         if d != None:
             trajectories.append(
-                Trajectory(env, list(d))
+                Trajectory(env, list(d), num_bins=num_categories, bin_labels=categories)
             )
         else:
            break
 
-    
     trajectory_set = TrajectorySet(trajectories)
-    print("Trajectory Set has Size::::::::::::")
-    print(trajectory_set.size)
 
     # Creates a query optimizer
-    # Will likely need to convert the dataset to work with Aprel's trajectory set class
     query_optimizer = QueryOptimizerDiscreteTrajectorySet(trajectory_set)
 
     # Creates a human user manager
     true_user = HumanUser(delay=0.5)
 
     # Creates a weight vector with randomized parameters
-    params = {"weights": get_random_normalized_vector(num_categories)}
+    random_params = {"weights": get_random_normalized_vector(num_categories)}
+    variational_params = {"weights": get_random_normalized_vector(num_categories)}
 
     # Creates a user model
-    user_model = SoftmaxUser(params)
+    random_user_model = SoftmaxUser(random_params)
+    variational_user_model = SoftmaxUser(variational_params)
 
     # Initializes the belief network using the user model and parameters
-    belief = SamplingBasedBelief(user_model, [], params)
+    # Comparing random sampling to variational autoencoder based sampling. 
+    random_belief = SamplingBasedBelief(random_user_model, [], random_params)
+    variational_belief = SamplingBasedBelief(variational_user_model, [], variational_params)
 
     # Creates an example query using the first two trajectories. 
     query = PreferenceQuery(trajectory_set[:2])
 
     # Learning Loop
     print("starting learning loop.......")
-    
-    for query_no in range(10):
-        queries, objective_values = query_optimizer.optimize('variational', belief, query, clusters=clusters)
-        print('Objective Value: ' + str(objective_values[0]))
-        
-        responses = true_user.respond(queries[0])
-        belief.update(Preference(queries[0], responses[0]))
-        print('Estimated user parameters: ' + str(belief.mean))
 
+    # Dictionaries to hold the adjusted weights over time for each terrain type. 
+    vweights = {
+        k : [] for k in categories
+    }
+
+    rweights = {
+        k : [] for k in categories
+    }
+    
+    for query_no in range(5):
+        vqueries, _ = query_optimizer.optimize('variational', variational_belief, query, clusters=clusters)
+        rqueries, _ = query_optimizer.optimize('random', random_belief, query, clusters=clusters)
+        
+        print("Variational Query ->")
+        vresponses = true_user.respond(vqueries[0])
+        print("Random Query ->")
+        rresonpses = true_user.respond(rqueries[0])
+
+        variational_belief.update(Preference(vqueries[0], vresponses[0]))
+        random_belief.update(Preference(rqueries[0], rresonpses[0]))
+
+        print(f"Estimated weights for variational belief: {variational_belief.mean}")
+        print(f"Estimated weights for random belief: {random_belief.mean}")
+
+        for i, vw in enumerate(variational_belief.mean["weights"]):
+            vweights[mapping_index_to_terrain[i]].append(vw)
+        
+        for j, rw in enumerate(random_belief.mean["weights"]):
+            rweights[mapping_index_to_terrain[j]].append(rw)
+
+    
+    # Plot weights over iterations
+    fig, axes = plt.subplots(1, 2, figsize=(12, 6))
+
+    for terrain_type in categories:
+        avg_vweights = moving_average(vweights[terrain_type])
+        axes[0].plot(avg_vweights, label=terrain_type)
+        avg_rweights = moving_average(rweights[terrain_type])
+        axes[1].plot(avg_rweights, label=terrain_type)
+    
+    axes[0].set_title("Average Terrain Weights Over Time for VAE Sampling")
+    axes[0].set_xlabel("Iteration")
+    axes[0].set_ylabel("Terrain Weight")
+    axes[0].legend()
+
+    axes[1].set_title("Average Terrain Weights Over Time for Random Sampling")
+    axes[1].set_xlabel("Iteration")
+    axes[1].set_ylabel("Terrain Weight")
+    axes[1].legend()
+
+    plt.tight_layout()
+
+    plt.show()
