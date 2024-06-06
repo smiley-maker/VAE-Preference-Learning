@@ -27,7 +27,7 @@ class TrainVAE:
 
     
     def vae_loss(self, x, x_hat, mean, logvar):
-        reproduction_loss = nn.functional.binary_cross_entropy(x_hat, x, reduction="sum")
+        reproduction_loss = nn.functional.mse_loss(x_hat, x, reduction="sum")
         KLD = - 0.5 * torch.sum(1+ logvar - mean.pow(2) - logvar.exp())
         return reproduction_loss + KLD
 
