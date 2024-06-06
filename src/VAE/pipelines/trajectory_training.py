@@ -52,12 +52,12 @@ if __name__ == "__main__":
         }
 
 
-    grid_size = (900, 900)
+    grid_size = (3000, 3000)
 
     random_array = np.random.randint(0, len(categories), size=grid_size)
     costmap = np.vectorize(lambda x: categories[x])(random_array)
 
-    segment_size = 64
+    segment_size = 80
     num_categories = len(categories)
     batch_size = 32
 
@@ -67,7 +67,7 @@ if __name__ == "__main__":
        terrain_classes_count=num_categories,
        trajectory_length=segment_size,
        latent_dim=num_categories,
-       hidden_size=128, 
+       hidden_size=256, 
        device=device
     ).to(device)
 
@@ -89,7 +89,7 @@ if __name__ == "__main__":
     trainer = TrainVAE(
         model=model,
         optimizer=optimizer,
-        epochs=2000,
+        epochs=3000,
         batch_size=32,
         data=dataloader, 
         xdim=num_categories*segment_size, # Maybe trajectory size? 
@@ -166,7 +166,7 @@ if __name__ == "__main__":
 #    vconvergence = []
 #    rconvergence = []
     
-    for query_no in range(20):
+    for query_no in range(50):
         vqueries, _ = query_optimizer.optimize('variational', variational_belief, query, clusters=clusters)
         rqueries, _ = query_optimizer.optimize('random', random_belief, query, clusters=clusters)
         print(vqueries[0].slate[0].features)
