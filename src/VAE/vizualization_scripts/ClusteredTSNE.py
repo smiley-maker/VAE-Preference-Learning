@@ -15,7 +15,7 @@ def cluster_latent_space(model, data_loader, device, mapping : dict = None):
         latent_array = np.concatenate(latent_representations, axis=0)
 
     # Clustering
-    km = KMeans(n_clusters=8, random_state=0, n_init="auto").fit(latent_array)
+    km = KMeans(n_clusters=len(mapping.keys()), random_state=0, n_init="auto").fit(latent_array)
 #    centers = km.cluster_centers_
     labels = km.labels_
 

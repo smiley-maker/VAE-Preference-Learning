@@ -26,8 +26,9 @@ class MemoryVAE(nn.Module):
             input_size=self.L,#*self.B,
             hidden_size=self.hidden_size,
             batch_first=True,
-#            bidirectional=False
+            num_layers=1
         )
+        
 
         self.encoder_meanvar = nn.Linear(
             in_features=self.hidden_size,#(self.B, 1, self.hidden_size),
@@ -43,7 +44,8 @@ class MemoryVAE(nn.Module):
         self.decoder_lstm = nn.LSTM(
             input_size=self.latent_dim,#(self.B, 1, self.hidden_size),
             hidden_size=self.hidden_size,
-            batch_first=True
+            batch_first=True,
+            num_layers=1,
         )
 
         self.decoder_output = nn.Linear(
@@ -77,7 +79,7 @@ class MemoryVAE(nn.Module):
 #        return nn.Softmax(z)
     
     def forward(self, x):
-        print(x.shape)
+#        print(x.shape)
         mean, logvar = self.encode(x)
         std_mean = self.reparametrize(mean, logvar)
         x_hat = self.decode(std_mean)

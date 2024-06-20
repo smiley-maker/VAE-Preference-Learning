@@ -77,7 +77,8 @@ class TrainVAE:
                     self.writer.add_image("LatentSpace/Samples", grid, epoch)
 
             
-            print(f"Epoch {epoch + 1}: {overall_loss/(batch_num*self.batch_size)}")
+            if epoch % 100 == 0:
+                print(f"Epoch {epoch + 1}: {overall_loss/(batch_num*self.batch_size)}")
         
         self.writer.close()
         return overall_loss
