@@ -118,7 +118,7 @@ if __name__ == "__main__":
     trainer = TrainVAE(
         model=model,
         optimizer=optimizer,
-        epochs=5000,
+        epochs=500,
         batch_size=32,
         data=dataloader, 
         xdim=num_categories*segment_size, # Maybe trajectory size? 
@@ -200,8 +200,9 @@ if __name__ == "__main__":
 #    vconvergence = []
 #    rconvergence = []
     
-    for query_no in range(30):
-        vqueries, _ = query_optimizer.optimize('variational', variational_belief, query, clusters=clusters)
+    for query_no in range(10):
+        print(f"RUNNING QUERY {query_no}")
+        vqueries, _ = query_optimizer.optimize('variational_info', variational_belief, query, clusters=clusters)
         rqueries, _ = query_optimizer.optimize('random', random_belief, query, clusters=clusters)
 #        print(vqueries[0].slate[0].features)
 
@@ -229,6 +230,7 @@ if __name__ == "__main__":
 
 #        print("Variational Query ->")
         vresponses = simuser.respond(vqueries[0])
+        print(vresponses)
 #        vresponses = true_user.respond(vqueries[0])
 #        print("Random Query ->")
         rresonpses = simuser.respond(rqueries[0])
