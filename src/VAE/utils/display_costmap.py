@@ -4,4 +4,5 @@ if __name__ == "__main__":
     costmap = np.load("../pipelines/traversability_costmap.npy")
     costmap = costmap.reshape((6400, 6400))
     plt.imshow(costmap, cmap="Paired")
+    plt.colorbar(label="Cost")  # Add a label to the colorbar
     plt.show()

@@ -24,7 +24,10 @@ class TrajectoryDataset(Dataset):
             data : np.ndarray, # Costmap
             num_samples : int, # Number of segments
             segment_length : int, # Length of each segment
-            terrain_types : list[str] # Terrain types in costmap
+            terrain_types : list[str], # Terrain types in costmap
+            device : torch.DeviceObjType,
+            start_point : tuple[int] = None, # Trajectory starting position
+            end_point : tuple[int] = None # Trajectory ending position
     ) -> None:
         super().__init__()
 
@@ -32,6 +35,9 @@ class TrajectoryDataset(Dataset):
         self.num_samples = num_samples
         self.segment_length = segment_length
         self.terrain_types = terrain_types
+        self.start_point = start_point
+        self.end_point = end_point
+        self.device = device
 
         self.mapping = {
             t : i for i,t in enumerate(self.terrain_types)
@@ -48,39 +54,86 @@ class TrajectoryDataset(Dataset):
 
         # Gets a random starting location. The last starting value is 
         # the segment length away from the end of the cost map. 
-        random_start_x = random.randrange(0, self.data.shape[0] - self.segment_length)
-        random_start_y = random.randrange(0, self.data.shape[1] - self.segment_length)
-        cell = self.data[random_start_x][random_start_y]
+        if self.start_point == None or self.end_point == None:
+            random_start_x = random.randrange(0, self.data.shape[0] - self.segment_length)
+            random_start_y = random.randrange(0, self.data.shape[1] - self.segment_length)
+            cell = self.data[random_start_x][random_start_y]
+        else:
+            random_start_x = self.start_point[0]
+            random_start_y = self.start_point[1]
+            cell = self.data[self.start_point[0]][self.start_point[1]]
+        
 
         trajectory.append(cell)
         # Now we want to add as many connected cells as needed. 
-        for i in range(self.segment_length):
-            surroundings = [
-                # We can move in the positive x direction
-                (self.data[random_start_x + 1][random_start_y], random_start_x + 1, random_start_y),
-                # We can move in the negative x direction
-                (self.data[random_start_x - 1][random_start_y], random_start_x - 1, random_start_y),
-                # We can move in the positive y direction
-                (self.data[random_start_x][random_start_y + 1], random_start_x, random_start_y + 1),
-                # We can move in the negative y direction
-                (self.data[random_start_x][random_start_y - 1], random_start_x, random_start_y - 1),
-                # We can move diagonally to the upper left
-                (self.data[random_start_x - 1][random_start_y + 1], random_start_x - 1, random_start_y + 1),
-                # We can move diagonally to the lower left
-                (self.data[random_start_x - 1][random_start_y - 1], random_start_x - 1, random_start_y - 1),
-                # We can move diagonally to the upper right
-                (self.data[random_start_x + 1][random_start_y + 1], random_start_x + 1, random_start_y + 1),
-                # We can move diagonally to the lower right
-                (self.data[random_start_x + 1][random_start_y - 1], random_start_x + 1, random_start_y - 1)
-            ] # - random start because we don't want to go backwards. 
+        if self.start_point != None and self.end_point != None:
+            count = 0
+            # We want to randomly select points until we reach the end_point. 
+            while (random_start_x, random_start_y) != self.end_point and count < self.segment_length:
+                surroundings = [
+                    # We can move in the positive x direction
+                    (self.data[random_start_x + 1][random_start_y], random_start_x + 1, random_start_y)
+                    if random_start_x < len(self.data)-1 else None,
+                    # We can move in the negative x direction
+                    (self.data[random_start_x - 1][random_start_y], random_start_x - 1, random_start_y)
+                    if random_start_x > 0 else None,
+                    # We can move in the positive y direction
+                    (self.data[random_start_x][random_start_y + 1], random_start_x, random_start_y + 1)
+                    if random_start_y < len(self.data[0])-1 else None,
+                    # We can move in the negative y direction
+                    (self.data[random_start_x][random_start_y - 1], random_start_x, random_start_y - 1)
+                    if random_start_y > 0 else None,
+                    # We can move diagonally to the upper left
+                    (self.data[random_start_x - 1][random_start_y + 1], random_start_x - 1, random_start_y + 1)
+                    if random_start_x > 0 and random_start_y < len(self.data[0])-1 else None,
+                    # We can move diagonally to the lower left
+                    (self.data[random_start_x - 1][random_start_y - 1], random_start_x - 1, random_start_y - 1)
+                    if random_start_x > 0 and random_start_y > 0 else None,
+                    # We can move diagonally to the upper right
+                    (self.data[random_start_x + 1][random_start_y + 1], random_start_x + 1, random_start_y + 1)
+                    if random_start_x < len(self.data)-1 and random_start_y < len(self.data[0])-1 else None,
+                    # We can move diagonally to the lower right
+                    (self.data[random_start_x + 1][random_start_y - 1], random_start_x + 1, random_start_y - 1)
+                    if random_start_x < len(self.data)-1 and random_start_y > 0 else None,
+                ] # - random start because we don't want to go backwards. 
+                surroundings = [s for s in surroundings if s is not None]
 
-            next_cell = random.choice(surroundings)
+                next_cell = random.choice(surroundings)
 
-            trajectory.append(next_cell[0])
+                trajectory.append(next_cell[0])
+                count += 1
 
-            random_start = next_cell
-            random_start_x = next_cell[1]
-            random_start_y = next_cell[2]
+                random_start = next_cell
+                random_start_x = next_cell[1]
+                random_start_y = next_cell[2]
+        else:
+            for i in range(self.segment_length):
+                surroundings = [
+                    # We can move in the positive x direction
+                    (self.data[random_start_x + 1][random_start_y], random_start_x + 1, random_start_y),
+                    # We can move in the negative x direction
+                    (self.data[random_start_x - 1][random_start_y], random_start_x - 1, random_start_y),
+                    # We can move in the positive y direction
+                    (self.data[random_start_x][random_start_y + 1], random_start_x, random_start_y + 1),
+                    # We can move in the negative y direction
+                    (self.data[random_start_x][random_start_y - 1], random_start_x, random_start_y - 1),
+                    # We can move diagonally to the upper left
+                    (self.data[random_start_x - 1][random_start_y + 1], random_start_x - 1, random_start_y + 1),
+                    # We can move diagonally to the lower left
+                    (self.data[random_start_x - 1][random_start_y - 1], random_start_x - 1, random_start_y - 1),
+                    # We can move diagonally to the upper right
+                    (self.data[random_start_x + 1][random_start_y + 1], random_start_x + 1, random_start_y + 1),
+                    # We can move diagonally to the lower right
+                    (self.data[random_start_x + 1][random_start_y - 1], random_start_x + 1, random_start_y - 1)
+                ] # - random start because we don't want to go backwards. 
+
+                next_cell = random.choice(surroundings)
+
+                trajectory.append(next_cell[0])
+
+                random_start = next_cell
+                random_start_x = next_cell[1]
+                random_start_y = next_cell[2]
 
         return trajectory
     
@@ -110,10 +163,23 @@ class TrajectoryDataset(Dataset):
             trajectory = self.integer_label_encoding(trajectory)
 #            trajectory = self.encode_trajectory(trajectory)
             if trajectory not in self.trajectories:
-                self.trajectories.append(trajectory)
+                # Pad trajectory with a different value. I think I should change this
+                # later because having a new value for uninhabited could interfere with
+                # the model training as it might be interpreted as a terrain type. 
+                padding_length = self.segment_length - len(trajectory) + 1
+                if len(trajectory) > padding_length:
+                    trajectory.extend(trajectory[:padding_length])
+                else:
+                    while padding_length > 0:
+                        # pad as much as is available
+                        trajectory.extend(trajectory[:padding_length])
+                        # calculate new padding length
+                        padding_length = self.segment_length - len(trajectory) + 1
+#                trajectory.extend([np.unique(trajectory)[-1] + 1]*padding_length)
+                self.trajectories.append(trajectory)#torch.tensor(trajectory, dtype=torch.float32, device=self.device))
                 i = i + 1
         
-        trajectories_mod = torch.stack([torch.tensor(t, dtype=torch.float) for t in self.trajectories])
+        trajectories_mod = torch.stack([torch.tensor(t, dtype=torch.float, device=self.device) for t in self.trajectories])
         self.trajectories = trajectories_mod
     
     def __visualize__(self, idx : int):
@@ -162,6 +228,10 @@ class TrajectoryDataset(Dataset):
     
     def __len__(self):
         return len(self.trajectories)
+    
+    def append(self, traj):
+#        self.trajectories.append(traj)
+        self.trajectories.add(traj)
 
 
 
