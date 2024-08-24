@@ -58,6 +58,11 @@ def get_preferential_order(weights, semantic_categories):
 
     return sorted_categories
 
+def coord_to_cell(x,y):
+    id_x = (y/0.2)
+    id_y = (x/0.2)
+    return (int(id_x), int(id_y))
+
 if __name__ == "__main__":
     # Create device
     device = torch.device("mps")
@@ -151,6 +156,7 @@ if __name__ == "__main__":
         end_point = (255, 160),
         device=device
     )
+
 
     dataset2 = copy.deepcopy(dataset)
 
@@ -317,7 +323,7 @@ if __name__ == "__main__":
     #for query_no in range(25):
         query_no += 1
         print(f"RUNNING QUERY {query_no}")
-        rqueries, _ = rquery_optimizer.optimize('variational_info', random_belief, query, clusters=clusters)
+        rqueries, _ = rquery_optimizer.optimize('mutual_information', random_belief, query, clusters=clusters)
         avg_var_r = 0
 
         for x in range(len(rewards)):
@@ -481,4 +487,4 @@ if __name__ == "__main__":
     print(f"The difference from ground truth from the VAE Query Selection was: {[abs(vbm[k] - rewards[k]) for k in range(len(rewards))]}")
     print(f"The difference from ground truth from the Random Query Selection was: {[abs(rbm[k] - rewards[k]) for k in range(len(rewards))]}")
     print(f"The MAE loss at the end for VAE Query Selection was: {variational_convergence_time[-1]}")
-    print(f"The MAE loss at the end for Maximum Entropy Query Selection was {random_convergence_time}")
+    print(f"The MAE loss at the end for Maximum Entropy Query Selection was {random_convergence_time[-1]}")
