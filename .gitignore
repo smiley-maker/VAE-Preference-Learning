@@ -1,5 +1,8 @@
 .DS_Store
 
+# Model folder
+/src/VAE/results/models/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

@@ -78,7 +78,7 @@ class TrainVAE:
 
             
             if epoch % 100 == 0:
-                print(f"Epoch {epoch + 1}: {overall_loss/(batch_num*self.batch_size)}")
+                print(f"Epoch {epoch}: {overall_loss/(batch_num*self.batch_size)}")
         
         self.writer.close()
         return overall_loss

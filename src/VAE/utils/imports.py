@@ -32,3 +32,5 @@ from aprel.learning.data_types import PreferenceQuery, Preference
 from aprel.basics.trajectory import Trajectory, TrajectorySet
 from matplotlib.colors import ListedColormap
 import time
+import copy
+import networkx as nx
