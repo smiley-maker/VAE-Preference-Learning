@@ -9,11 +9,7 @@ class SimUser:
             i : labels[i] for i in range(len(self.rewards))
         }
 
-#        paired = list(zip(self.rewards, self.labels))
-#        paired_sorted = sorted(paired, key=lambda x: x[0], reverse=False)
-
         self.terrain_order = self.get_preferential_order({l : r for l,r in zip(self.labels, self.rewards)})
-        #[category for _, category in paired_sorted]
 
         print(f"TERRAIN ORDER: {self.terrain_order}")
     
@@ -29,9 +25,9 @@ class SimUser:
         Returns:
             list[str]: Returns a list of terrain types sorted based on the rewards.
         """
+        print(f"Simulated User Reward Dictionary: {reward_dict}")
         paired_rewards = list(reward_dict.items())
         sorted_rewards = sorted(paired_rewards, key=lambda x : x[1])
-#        print(f"SORTED REWARDS: {sorted_rewards}")
         return [c for c, _ in sorted_rewards]
 
     
@@ -50,23 +46,12 @@ class SimUser:
 
         assert len(other_rewards) == len(self.rewards)
 
-        print("Other Rewards:::")
-        print(other_rewards)
-        print("Ground Truth:::")
-        print(self.terrain_order)
-        print(self.rewards)
 
         alignment_count = 0
         for i, terrain in enumerate(self.terrain_order):
             if other_rewards[i] != terrain:
                 alignment_count += 1
 
-     #   alignment_count = 0
-     #   for i in range(len(self.terrain_order)):
-     #       if other_rewards[i] != self.terrain_order[i]:
-     #           alignment_count += 1
-        
-#        print(f"ALIGNMENT COUNT: {alignment_count}")
         return alignment_count
     
     def preference(self, t1 : list[str], t2 : list[str]) -> int:
@@ -79,11 +64,16 @@ class SimUser:
         Returns:
             int: Simulated choice (0 or 1) between trajectories. 
         """
-        if self.check_distribution(t1) > self.check_distribution(t2):
+        t1_alignment = self.check_distribution(t1)
+        t2_alignment = self.check_distribution(t2)
+        if t1_alignment > t2_alignment:
+            print(f"ALIGNMENT COUNT: {t2_alignment}, t2")
             return 1 # t1 had more out of order terrains, pick t2
-        elif self.check_distribution(t1) < self.check_distribution(t2):
+        elif t1_alignment < t2_alignment:
+            print(f"ALIGNMENT COUNT: {t1_alignment}, t1")
             return 0 # pick t1
         else:
+            print(f"ALIGNMENT COUNT: {t1_alignment}, equal")
             return random.choice([0, 1]) # if equal, random choice
 
 
@@ -106,5 +96,4 @@ class SimUser:
         for query in queries:
             # query.slate[0] gives a trajectory.
             responses.append(self.preference(query.slate[0].features[1], query.slate[1].features[1]))
-#            responses.append(query.visualize(self.delay))
         return responses

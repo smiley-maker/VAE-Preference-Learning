@@ -1,8 +1,4 @@
-#from src.VAE.vizualization_scripts.ClusteredTSNE import cluster_latent_space, visualize_latent_space
-#from src.VAE.data_handlers.trajectory_segment_gatherer import TrajectoryDataset
-#from src.VAE.training_scripts.train_vae import TrainVAE
 from src.VAE.utils.moving_average import moving_average
-#from src.VAE.architectures.vae_lstm import MemoryVAE
 from src.VAE.utils.simulated_user import SimUser
 from src.VAE.utils.imports import *
 
@@ -38,6 +34,14 @@ class TerrainLearning:
         self.use_sim = use_sim
         self.simuser = simuser
 
+        print(f"Preference learning ground truth: {self.ground_truth}")
+        print(f"Preference learning terrain labels: {self.terrain_labels}")
+        self.pl = {
+            t : r for t,r in zip(self.terrain_labels, self.ground_truth)
+        }
+        print(f"Preference learning preferential order: {self.simuser.get_preferential_order(self.pl)}")
+        print(self.pl)
+
         self.experiments = {
             k: {
                 # Experiments to track
@@ -48,9 +52,6 @@ class TerrainLearning:
             for k in self.algorithms
         }
 
-#        if self.use_sim:
-#            self.simuser = SimUser(self.ground_truth, self.terrain_labels)
-#
         try:
             assert len(self.datasets) == len(self.algorithms)
         except:
@@ -329,19 +330,30 @@ class TerrainLearning:
         # Creating a color palette
         # Water, Sand, Rock, Trees, Sidewalk
 #        colors = ["#3b6994", "#b8a225", "#594010", "#76b08e", "#9b88bf"]
-        colors = ["#2C0E37", "#FFBC85", "#87313F", "#074F57", "#BFCDD9"]
+#        colors = ["#2C0E37", "#FFBC85", "#87313F", "#074F57", "#BFCDD9"]
         #colors = ["#0E103D", "#6A3E37", "#455E53", "#BC8034", "#A1A5A1", "#6C5A49", "#C8AD55", "#9BC59D", "#363537", "#FAC9B8"]
         print(self.terrain_labels)
+
         color_dict = {
-            t : c for t,c in zip(self.terrain_labels, colors)
+            "Water": "#5D8CB1",
+            "Trees": "#5C8441",
+            "Rock": "#766440",
+            "Sand": "#D0C5B4",
+            "Sidewalk": "#8897A0"
         }
+
+
+#        color_dict = {
+#            t : c for t,c in zip(self.terrain_labels, colors)
+#        }
 
         alignment_colors = ["#FAC05E", "#5448C8"]
 
         titles = {
-            "variational_info" : "VAE Querying Terrain Weights",
-            "mutual_information" : "Mutual Information Terrain Weights",
-            "volume_removal" : "Volume Removal Terrain Weights"
+            "variational_info" : "VAE Querying Terrain Rewards",
+            "mutual_information" : "Mutual Information Terrain Rewards",
+            "volume_removal" : "Volume Removal Terrain Rewards",
+            
         }
 
         # Create figure
@@ -474,3 +486,104 @@ class TerrainLearning:
             final_error = [abs(t[-1] - g) for t, g in zip(self.experiments[algorithm]["rewards"].values(), self.ground_truth)]
             print(f"The final errors from the ground truth rewards were: {final_error}")
             print("#-#-#"*20)
+
+    def plot_more_algorithms_together(self, fig_file : str, error_file : str):
+        color_dict = {
+            "Water": "#5D8CB1",
+            "Trees": "#5C8441",
+            "Rock": "#766440",
+            "Sand": "#D0C5B4",
+            "Sidewalk": "#8897A0"
+        }
+
+        alignment_colors = ["#FAC05E", "#5448C8", "#e9a8ff", "#7197d1", "#bae6c0", "#e06331", "#d0b7ed", "#78b093"]
+
+        titles = {
+            "variational_info" : "VAE Querying Terrain Rewards",
+            "mutual_information" : "Mutual Information Terrain Rewards",
+            "volume_removal" : "Volume Removal Terrain Rewards",
+            "regret" : "Regret Terrain Rewards",
+            "thompson" : "Thompson Terrain Rewards",
+            "disagreement" : "Disagreement Terrain Rewards"
+        }
+
+        print("#################################\n#################################\n#################################")
+        print("RESULTS")
+        
+        for algorithm in self.experiments.keys():
+            final_weights = [self.experiments[algorithm]["rewards"][t][-1] for t in self.terrain_labels]
+            print(f"The final weights for {algorithm} were: {final_weights}")
+            final_convergence = self.experiments[algorithm]["error"][-1]
+            print(f"The difference from the ground truth weights was: {final_convergence}")
+            final_alignment = self.experiments[algorithm]["alignment"][-1]
+            print(f"The alignment between the ground truth and learned weights was: {final_alignment}")
+            final_error = [abs(t[-1] - g) for t, g in zip(self.experiments[algorithm]["rewards"].values(), self.ground_truth)]
+            print(f"The final errors from the ground truth rewards were: {final_error}")
+            print("#-#-#"*20)
+
+
+        # Create figure
+        # The number of horizontal plots should be the same as the number of
+        # algorithms in the experiments dictionary. The number of vertical plots
+        # will be 2 (one row for the weights and one for the convergence and alignment)
+
+        # Also just plot alignment and convergence
+        fig, ax = plt.subplots(1, 2)
+        fig.subplots_adjust(wspace=0.75, hspace=0.75)
+
+        for idx, algorithm in enumerate(self.experiments):
+
+            # Plot alignment
+            ax[0].plot(self.experiments[algorithm]["alignment"], color=alignment_colors[idx], linewidth=2, label=algorithm)
+            ax[0].spines["right"].set_visible(False)
+            ax[0].spines["left"].set_visible(False)
+            ax[0].spines["top"].set_visible(False)
+            ax[0].yaxis.set_ticks_position("left")
+            ax[0].xaxis.set_ticks_position("bottom")
+            ax[0].spines["left"].set_bounds(0, 5)
+
+            # Plot convergence
+            ax[1].plot(self.experiments[algorithm]["error"], color=alignment_colors[idx], linewidth=2, label=algorithm)
+            ax[1].spines["right"].set_visible(False)
+            ax[1].spines["left"].set_visible(False)
+            ax[1].spines["top"].set_visible(False)
+            ax[1].yaxis.set_ticks_position("left")
+            ax[1].xaxis.set_ticks_position("bottom")
+
+        
+        ax[0].set_title("Alignment to Ground Truth Weights")
+        ax[0].set_xlabel("Query Number")
+        ax[0].set_ylabel("# of Terrains Out of Order")
+        ax[0].legend()
+
+        ax[1].set_title("Convergence to Ground Truth Weights")
+        ax[1].set_xlabel("Query Number")
+        ax[1].set_ylabel("MSE")
+        ax[1].legend()
+
+        plt.show()
+
+        plt.close()
+
+
+        convergences = {
+            a : sum([abs(self.experiments[a]["rewards"][t][-1] - self.pl[t]) for t in self.terrain_labels]) for a in self.algorithms
+        }
+
+        print(convergences)
+
+        # Create the bar chart
+        plt.figure(figsize=(16, 10))
+        fig.subplots_adjust(wspace=0.75, hspace=0.75)
+        plt.bar(self.algorithms, list(convergences.values()), color=alignment_colors)
+        plt.xlabel("Algorithm")
+        plt.ylabel("Convergence Value")
+        plt.title("Comparison of Algorithm Convergence")
+        plt.xticks(rotation=45)  # Rotate x-axis labels if they overlap
+        plt.show()
+
+        plt.savefig("../results/fixed/all_algorithms_75_queries_200_epochs_32_trajectories_200_length.png")
+        plt.close()
+
+
+
