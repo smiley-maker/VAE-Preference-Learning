@@ -5,7 +5,7 @@ Many navigational problems in robotics necessitate a well defined cost map relat
 
 ## Initial Results
 
-<img src="./src/VAE/results/medium algorithm convergence comparison 75 queries.png", alt="Convergence comparison for several algorithms over 75 queries; gives histogram of final convergence values for each algorithm, showing ours performed significantly better over the others" />
+<img src="./src/VAE/results/medium algorithm convergence comparison 75 queries.png" alt="Convergence comparison for several algorithms over 75 queries; gives histogram of final convergence values for each algorithm, showing ours performed significantly better over the others" />
 
 <img src="./src/VAE/results/medium convergence algorithm comparison 75 queries.png" alt="Convergence comparison for several algorithms over 75 queries; gives the convergence over time for all algorithms" />
 
