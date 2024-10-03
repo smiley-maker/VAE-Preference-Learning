@@ -1,7 +1,12 @@
 # VAE-based Terrain Preference-Learning Over Pairwise Trajectory Queries
 
 
-Many navigational problems in robotics necessitate a well defined cost map related to the environment. Traditional techniques in creating these involve manual specification of terrain costs based on some context known to the human. However, this becomes intractable with large numbers of terrain types. Preference learning offers a unique way of tackling this type of problem by inferring a reward function through trajectory queries. However, offline preference learning suffers from the variability of the initial dataset, which limits the amount of information that can be gained from query responses and introduces a higher degree of cognitive burden on the human. In this paper, we propose to utilize recent advancements in preference learning surrounding the use of generative models, specifically variational autoencoders, as they utilize a lower dimensional latent space useful for clustering and inferring similarity or dissimilarity, to combat analogous or insufficient trajectory sets towards robotic navigation through learned terrain weights.
+Terrain preference learning from trajectory queries allows complex reward structures to be obtained for robot navigation without the need for manual specification. However, traditional offline preference learning approaches suffer from ambiguous trajectory pairs stemming from inadequacy in the initial dataset, which causes longer learning times and may lead to less accurate results. Several approaches have been introduced to tackle this common problem including creating preference learning models robust to volatility in weights from ambiguous choices, enhancing the query selection process towards mitigating dubious trajectory choices, and modifying the original dataset with highly variant samples. Inspired by recent work in the application of deep learning towards improving query selection, this paper introduces a joint dataset and query optimization procedure utilizing variational autoencoders. Our efforts leverage both the encoder and decoder models to identify underrepresented terrain types and supplement the trajectory set with targeted samples created using the decoder. We jointly optimize a clustered latent space towards creating balanced clusters that can be used to obtain diverse trajectory pairs.  
+
+Currently in submission for HRI 2025. Presented at the InterAI workshop, and in a late breaking report session, at RO-MAN 2024. See the link below for the workshop paper. 
+
+https://drive.google.com/file/d/1m5Fjig8bQNhsfFhzz2JFDxARZe4t-9dd/view
+
 
 ## Initial Results
 
