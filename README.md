@@ -4,7 +4,7 @@
 
 Terrain preference learning from trajectory queries allows complex reward structures to be obtained for robot navigation without the need for manual specification. However, traditional offline preference learning approaches suffer from ambiguous trajectory pairs stemming from inadequacy in the initial dataset, which causes longer learning times and may lead to less accurate results. Several approaches have been introduced to tackle this common problem including creating preference learning models robust to volatility in weights from ambiguous choices, enhancing the query selection process towards mitigating dubious trajectory choices, and modifying the original dataset with highly variant samples. Inspired by recent work in the application of deep learning towards improving query selection, this paper introduces a joint dataset and query optimization procedure utilizing variational autoencoders. Our efforts leverage both the encoder and decoder models to identify underrepresented terrain types and supplement the trajectory set with targeted samples created using the decoder. We jointly optimize a clustered latent space towards creating balanced clusters that can be used to obtain diverse trajectory pairs.  
 
-Currently in submission for HRI 2025. Presented at the InterAI workshop, and in a late breaking report session, at RO-MAN 2024. See the link below for the workshop paper. 
+Presented at RO-MAN 2025 at the InterAI workshop, and in a late breaking report session, at RO-MAN 2024. See the link below for the workshop paper.
 
 https://drive.google.com/file/d/1m5Fjig8bQNhsfFhzz2JFDxARZe4t-9dd/view
 
