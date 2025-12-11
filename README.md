@@ -4,8 +4,8 @@
 *Published in RO-MAN, 2025*
 
 [![IEEE Xplore](https://img.shields.io/badge/IEEE_Xplore-Full_Paper-00629B?style=flat-square&logo=ieee&logoColor=white)](https://ieeexplore.ieee.org/document/11217576)
-[![Conference](https://img.shields.io/badge/RO--MAN_2025-Eindhoven-orange?style=flat-square)](https://www.ro-man2025.org/)
-[![License](https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square)](LICENSE)
+[![Conference](https://img.shields.io/badge/RO--MAN_2025-Eindhoven-pink?style=flat-square)](https://www.ro-man2025.org/)
+<img src="https://img.shields.io/badge/pytorch-orange" />
 
 ## Abstract
 
