@@ -1,12 +1,15 @@
-# VAE-based Terrain Preference-Learning Over Pairwise Trajectory Queries
+# Maximizing Query Diversity for Terrain Cost Preference Learning in Robot Navigation
 
-## Introduction
+**Official PyTorch implementation of the paper: "Maximizing Query Diversity for Terrain Cost Preference Learning in Robot Navigation"**
+*Published in RO-MAN, 2025*
 
-Terrain preference learning from trajectory queries allows complex reward structures to be obtained for robot navigation without the need for manual specification. However, traditional offline preference learning approaches suffer from ambiguous trajectory pairs stemming from inadequacy in the initial dataset, which causes longer learning times and may lead to less accurate results. Several approaches have been introduced to tackle this common problem including creating preference learning models robust to volatility in weights from ambiguous choices, enhancing the query selection process towards mitigating dubious trajectory choices, and modifying the original dataset with highly variant samples. Inspired by recent work in the application of deep learning towards improving query selection, this paper introduces a joint dataset and query optimization procedure utilizing variational autoencoders. Our efforts leverage both the encoder and decoder models to identify underrepresented terrain types and supplement the trajectory set with targeted samples created using the decoder. We jointly optimize a clustered latent space towards creating balanced clusters that can be used to obtain diverse trajectory pairs.  
+[![IEEE Xplore](https://img.shields.io/badge/IEEE_Xplore-Full_Paper-00629B?style=flat-square&logo=ieee&logoColor=white)](https://ieeexplore.ieee.org/document/11217576)
+[![Conference](https://img.shields.io/badge/RO--MAN_2025-Eindhoven-orange?style=flat-square)](https://www.ro-man2025.org/)
+[![License](https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square)](LICENSE)
 
-Presented at RO-MAN 2025 at the InterAI workshop, and in a late breaking report session, at RO-MAN 2024. See the link below for the workshop paper.
+## Abstract
 
-https://drive.google.com/file/d/1m5Fjig8bQNhsfFhzz2JFDxARZe4t-9dd/view
+> Effective robot navigation in real-world environments requires an understanding of terrain properties, as different terrain types impact factors such as speed, safety, and wear on the platform. Preference-based learning offers a compelling framework in which terrain costs can be inferred through simple trajectory queries to the user. However, existing query selection methods often suffer from redundant selection due to limited trajectory diversity, as well as query ambiguity, where the user must choose between trajectories with minimal distinguishable differences. These issues lead to inefficient learning and suboptimal terrain cost estimation. In this paper, we introduce a joint optimization framework that increases learning efficiency by improving both the diversity of the trajectory set and the query selection strategy. We used a variational autoencoder (VAE) to encode and group trajectories based on their terrain characteristics. Clusters were used to identify less represented terrain types so that new trajectories can be added to the corresponding cluster to ensure a balanced and representative query set. Additionally, we employ a cluster-aware query selection mechanism that prioritizes diverse trajectory pairs pulled from distinct clusters to maximize information gain. Experimental results demonstrate that our approach significantly reduces the number of queries required to converge to the ground-truth terrain cost assignment, outperforming state-of-the-art query selection techniques.
 
 ## Background
 
